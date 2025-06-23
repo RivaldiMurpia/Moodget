@@ -1,4 +1,7 @@
 {
+  "prisma": {
+    "schema": "client/prisma/schema.prisma"
+  },
   "devDependencies": {
     "@prisma/client": "^6.10.1",
     "@types/next": "^9.0.0",
