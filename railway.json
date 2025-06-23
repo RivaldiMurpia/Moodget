@@ -1,0 +1,21 @@
+{
+  "plugins": [
+    {
+      "name": "postgresql",
+      "options": {
+        "version": "14"
+      }
+    }
+  ],
+  "build": {
+    "builder": "heroku/buildpacks:20",
+    "env": {
+      "DATABASE_URL": "@postgresql::DATABASE_URL",
+      "NEXTAUTH_SECRET": "@NEXTAUTH_SECRET"
+    },
+    "start": "npm run start"
+  },
+  "deploy": {
+    "start": "npm run build && npm run start"
+  }
+}
