@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@prisma/client": "^6.10.1",
+    "@types/next": "^9.0.0",
+    "@types/next-auth": "^3.15.0",
+    "@types/node": "^24.0.3"
+  }
+}
