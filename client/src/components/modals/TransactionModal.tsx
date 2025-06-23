@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Modal from '@/components/ui/Modal';
+import Modal from '@/components/ui/modal';
 import TransactionForm from '@/components/forms/TransactionForm';
 import { transactions } from '@/utils/api';
 import { useToast } from '@/contexts/ToastContext';
@@ -26,7 +26,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   transaction,
   onSuccess,
 }) => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -36,7 +36,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     category: string;
     tags: string[];
   }) => {
-    if (!token) {
+    if (!user?.id) {
       showToast('Authentication required', 'error');
       return;
     }
@@ -45,7 +45,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     try {
       if (transaction) {
         // Update existing transaction
-        const response = await transactions.update(token, transaction.id, data);
+        const response = await transactions.update(user.id, transaction.id, data);
         if (response.status === 'success') {
           showToast('Transaction updated successfully', 'success');
           onSuccess();
@@ -55,7 +55,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
         }
       } else {
         // Create new transaction
-        const response = await transactions.create(token, data);
+        const response = await transactions.create(user.id, data);
         if (response.status === 'success') {
           showToast('Transaction created successfully', 'success');
           onSuccess();

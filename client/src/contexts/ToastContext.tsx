@@ -1,43 +1,78 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useCallback, useState } from 'react';
-import Toast, { ToastType } from '@/components/ui/Toast';
+import React, { createContext, useContext, useState } from "react";
 
-interface ToastMessage {
-  id: number;
+interface Toast {
+  id: string;
   message: string;
-  type: ToastType;
+  type: "success" | "error" | "info";
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  toasts: Toast[];
+  showToast: (message: string, type: Toast["type"]) => void;
+  removeToast: (id: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = Date.now();
-    setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
-  }, []);
+  const showToast = (message: string, type: Toast["type"]) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const newToast = { id, message, type };
+    setToasts((prev) => [...prev, newToast]);
 
-  const removeToast = useCallback((id: number) => {
-    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
-  }, []);
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      removeToast(id);
+    }, 3000);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, removeToast }}>
       {children}
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
+      {/* Toast Container */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`
+              px-4 py-3 rounded-lg shadow-lg max-w-sm
+              ${
+                toast.type === "success"
+                  ? "bg-green-500"
+                  : toast.type === "error"
+                  ? "bg-red-500"
+                  : "bg-blue-500"
+              }
+              text-white
+            `}
+          >
+            <div className="flex items-center space-x-2">
+              {toast.type === "success" && (
+                <i className="fas fa-check-circle"></i>
+              )}
+              {toast.type === "error" && (
+                <i className="fas fa-exclamation-circle"></i>
+              )}
+              {toast.type === "info" && <i className="fas fa-info-circle"></i>}
+              <p>{toast.message}</p>
+              <button
+                onClick={() => removeToast(toast.id)}
+                className="ml-auto text-white hover:text-gray-200"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </ToastContext.Provider>
   );
 }
@@ -45,14 +80,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 export function useToast() {
   const context = useContext(ToastContext);
   if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider');
+    throw new Error("useToast must be used within a ToastProvider");
   }
   return context;
 }
-
-// Example usage:
-// const { showToast } = useToast();
-// showToast('Operation successful!', 'success');
-// showToast('Something went wrong!', 'error');
-// showToast('Please wait...', 'info');
-// showToast('Be careful!', 'warning');

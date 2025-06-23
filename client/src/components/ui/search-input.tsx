@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Input from '@/components/ui/Input';
+import Input from './input';
 
 interface SearchInputProps {
   onSearch: (value: string) => void;

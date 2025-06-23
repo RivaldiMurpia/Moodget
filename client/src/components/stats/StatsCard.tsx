@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import Card from '@/components/ui/Card';
-import { LoadingOverlay } from '@/components/ui/LoadingSpinner';
+import Card from '@/components/ui/card';
+import { LoadingOverlay } from '@/components/ui/loadingspinner';
 
 interface StatTrendProps {
   value: number;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useImperativeHandle } from 'react';
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -38,22 +38,15 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       onBlur,
       ...props
     },
-    ref
+    forwardedRef
   ) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-    const mergedRef = (node: HTMLTextAreaElement) => {
-      // Forward the ref
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (ref) {
-        ref.current = node;
-      }
-      textareaRef.current = node;
-    };
+    const localRef = React.useRef<HTMLTextAreaElement>(null);
+
+    // Use useImperativeHandle to properly forward the ref
+    useImperativeHandle(forwardedRef, () => localRef.current!, []);
 
     const adjustHeight = React.useCallback(() => {
-      const textarea = textareaRef.current;
+      const textarea = localRef.current;
       if (!textarea || !autoGrow) return;
 
       // Reset height to allow shrinking
@@ -86,6 +79,8 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       adjustHeight();
     }, [value, adjustHeight]);
 
+    const [isFocused, setIsFocused] = React.useState(false);
+
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onChange?.(e);
       if (autoGrow) {
@@ -113,7 +108,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
         <div className="relative">
           <textarea
-            ref={mergedRef}
+            ref={localRef}
             value={value}
             onChange={handleChange}
             onFocus={handleFocus}

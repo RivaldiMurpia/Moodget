@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LoadingOverlay } from '@/components/ui/LoadingSpinner';
+import { LoadingOverlay } from '@/components/ui/loadingspinner';
 
 interface Column<T> {
   key: string;

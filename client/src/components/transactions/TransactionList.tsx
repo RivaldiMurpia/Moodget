@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import Card from '@/components/ui/card';
+import Button from '@/components/ui/button';
 import TransactionModal from '@/components/modals/TransactionModal';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
-import { LoadingOverlay } from '@/components/ui/LoadingSpinner';
+import { LoadingOverlay } from '@/components/ui/loadingspinner';
 import { transactions } from '@/utils/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
+import toast from 'react-hot-toast';
 
 interface Transaction {
   id: number;
@@ -36,8 +36,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   limit,
   compact = false,
 }) => {
-  const { token } = useAuth();
-  const { showToast } = useToast();
+  const { user } = useAuth();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -45,19 +44,19 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const displayData = limit ? data.slice(0, limit) : data;
 
   const handleDelete = async () => {
-    if (!token || !deletingTransaction) return;
+    if (!user?.id || !deletingTransaction) return;
 
     setIsDeleting(true);
     try {
-      const response = await transactions.delete(token, deletingTransaction.id);
+      const response = await transactions.delete(user.id, deletingTransaction.id);
       if (response.status === 'success') {
-        showToast('Transaction deleted successfully', 'success');
+        toast.success('Transaction deleted successfully');
         onTransactionChange?.();
       } else {
-        showToast(response.message || 'Failed to delete transaction', 'error');
+        toast.error(response.message || 'Failed to delete transaction');
       }
     } catch (error) {
-      showToast('An error occurred while deleting the transaction', 'error');
+      toast.error('An error occurred while deleting the transaction');
     } finally {
       setIsDeleting(false);
       setDeletingTransaction(null);

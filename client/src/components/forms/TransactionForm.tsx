@@ -1,246 +1,209 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import { useToast } from '@/contexts/ToastContext';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Button from "../ui/button";
+import Input from "../ui/input";
+import Select from "../ui/select";
+import Card from "../ui/card";
+import CardContent from "../ui/card";
+import CardHeader from "../ui/card";
+import CardTitle from "../ui/card";
+import Checkbox from "../ui/checkbox";
 
-interface TransactionFormProps {
-  initialData?: {
-    amount: number;
-    description: string;
-    category: string;
-    tags: string[];
-  };
-  onSubmit: (data: {
-    amount: number;
-    description: string;
-    category: string;
-    tags: string[];
-  }) => Promise<void>;
-  onCancel: () => void;
-  isLoading?: boolean;
+interface Category {
+  id: number;
+  name: string;
 }
 
-const categories = [
-  'Food',
-  'Transportation',
-  'Housing',
-  'Utilities',
-  'Entertainment',
-  'Shopping',
-  'Healthcare',
-  'Education',
-  'Income',
-  'Investment',
-  'Other',
-];
+interface Tag {
+  id: number;
+  name: string;
+}
 
-const TransactionForm: React.FC<TransactionFormProps> = ({
-  initialData,
-  onSubmit,
-  onCancel,
-  isLoading = false,
-}) => {
-  const { showToast } = useToast();
-  const [formData, setFormData] = useState({
-    amount: initialData?.amount || 0,
-    description: initialData?.description || '',
-    category: initialData?.category || categories[0],
-    tags: initialData?.tags || [],
-    newTag: '', // For tag input
+interface FormData {
+  amount: string;
+  description: string;
+  categoryId: string;
+  transactionDate: string;
+}
+
+export default function TransactionForm() {
+  const router = useRouter();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [formData, setFormData] = useState<FormData>({
+    amount: "",
+    description: "",
+    categoryId: "",
+    transactionDate: new Date().toISOString().split('T')[0],
   });
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [errors, setErrors] = useState<{
-    amount?: string;
-    description?: string;
-    category?: string;
-  }>({});
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesRes, tagsRes] = await Promise.all([
+          fetch('/api/categories'),
+          fetch('/api/tags')
+        ]);
+        
+        if (!categoriesRes.ok || !tagsRes.ok) throw new Error("Failed to fetch data");
+        
+        const categoriesData = await categoriesRes.json();
+        const tagsData = await tagsRes.json();
+        
+        setCategories(categoriesData.categories);
+        setTags(tagsData.tags);
+      } catch (err) {
+        setError("Failed to load form data");
+      }
+    };
 
-  const validateForm = () => {
-    const newErrors: typeof errors = {};
+    fetchData();
+  }, []);
 
-    if (!formData.amount) {
-      newErrors.amount = 'Amount is required';
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleTagToggle = (tagId: number) => {
+    setSelectedTags(prev => 
+      prev.includes(tagId) 
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      showToast('Please fill in all required fields', 'error');
-      return;
-    }
-
+    setIsLoading(true);
     try {
-      await onSubmit({
-        amount: formData.amount,
-        description: formData.description,
-        category: formData.category,
-        tags: formData.tags,
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          tagIds: selectedTags,
+        }),
       });
-    } catch (error) {
-      showToast('Failed to save transaction', 'error');
-    }
-  };
 
-  const handleAddTag = () => {
-    const tag = formData.newTag.trim().toLowerCase();
-    if (tag && !formData.tags.includes(tag)) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, tag],
-        newTag: '',
-      }));
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create transaction");
+      }
+      
+      router.refresh(); // Refresh the page to show new transaction
+      // Reset form
+      setFormData({
+        amount: "",
+        description: "",
+        categoryId: "",
+        transactionDate: new Date().toISOString().split('T')[0],
+      });
+      setSelectedTags([]);
+    } catch (err: any) {
+      setError(err.message || "Failed to create transaction");
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((tag) => tag !== tagToRemove),
-    }));
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <Input
-            label="Amount"
-            type="number"
-            step="0.01"
-            value={formData.amount}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                amount: parseFloat(e.target.value) || 0,
-              }))
-            }
-            error={errors.amount}
-            startIcon={<span className="text-gray-500">$</span>}
-            fullWidth
-          />
-        </div>
-
-        <div>
-          <Input
-            label="Description"
-            value={formData.description}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
-            }
-            error={errors.description}
-            fullWidth
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category
-          </label>
-          <select
-            value={formData.category}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                category: e.target.value,
-              }))
-            }
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-          {errors.category && (
-            <p className="mt-1 text-sm text-red-600">{errors.category}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tags
-          </label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {formData.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(tag)}
-                  className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-indigo-200"
-                >
-                  <span className="sr-only">Remove tag</span>
-                  <i className="fas fa-times text-xs"></i>
-                </button>
-              </span>
-            ))}
+    <Card className="w-full max-w-2xl mx-auto bg-white shadow-lg">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-gray-900">Add New Transaction</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Amount</label>
+              <Input
+                type="number"
+                name="amount"
+                placeholder="0.00"
+                value={formData.amount}
+                onChange={handleChange}
+                required
+                className="w-full"
+                step="0.01"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Date</label>
+              <Input
+                type="date"
+                name="transactionDate"
+                value={formData.transactionDate}
+                onChange={handleChange}
+                required
+                className="w-full"
+              />
+            </div>
           </div>
-          <div className="flex gap-2">
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Description</label>
             <Input
-              placeholder="Add a tag"
-              value={formData.newTag}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  newTag: e.target.value,
-                }))
-              }
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddTag();
-                }
-              }}
+              name="description"
+              placeholder="What did you spend on?"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              className="w-full"
             />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleAddTag}
-              disabled={!formData.newTag.trim()}
-            >
-              Add
-            </Button>
           </div>
-        </div>
-      </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Category</label>
+            <Select
+              options={categories.map(category => ({
+                value: category.id.toString(),
+                label: category.name
+              }))}
+              value={formData.categoryId}
+              onChange={(value: string) => 
+                setFormData(prev => ({ ...prev, categoryId: value }))
+              }
+              placeholder="Select a category"
+              className="w-full"
+            />
+          </div>
 
-      <div className="flex justify-end space-x-3 pt-6 border-t">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isLoading}>
-          {initialData ? 'Update' : 'Create'} Transaction
-        </Button>
-      </div>
-    </form>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Emotional Tags</label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {tags.map(tag => (
+                <Checkbox 
+                  key={tag.id}
+                  checked={selectedTags.includes(tag.id)}
+                  onChange={() => handleTagToggle(tag.id)}
+                  label={tag.name}
+                  size="sm"
+                  className="mb-2"
+                />
+              ))}
+            </div>
+          </div>
+
+          {error && (
+            <div className="text-red-500 text-sm mt-2">
+              {error}
+            </div>
+          )}
+          
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={isLoading}
+          >
+            {isLoading ? "Adding..." : "Add Transaction"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
-};
-
-export default TransactionForm;
+}

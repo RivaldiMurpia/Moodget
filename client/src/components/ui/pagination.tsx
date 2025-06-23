@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Button from '@/components/ui/Button';
+import Button from '@/components/ui/button';
 
 interface PaginationProps {
   currentPage: number;
@@ -11,7 +11,7 @@ interface PaginationProps {
   itemsPerPage?: number;
   showItemsPerPage?: boolean;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -22,7 +22,7 @@ const Pagination: React.FC<PaginationProps> = ({
   itemsPerPage = 10,
   showItemsPerPage = true,
   className = '',
-  size = 'md',
+  size = 'default',
 }) => {
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
@@ -74,15 +74,10 @@ const Pagination: React.FC<PaginationProps> = ({
 
   const sizeClasses = {
     sm: 'text-sm',
-    md: 'text-base',
+    default: 'text-base',
     lg: 'text-lg',
+    icon: 'text-base',
   };
-
-  const buttonSizes = {
-    sm: 'sm',
-    md: 'md',
-    lg: 'lg',
-  } as const;
 
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`}>
@@ -105,7 +100,7 @@ const Pagination: React.FC<PaginationProps> = ({
       <div className="flex items-center space-x-2">
         <Button
           variant="secondary"
-          size={buttonSizes[size]}
+          size={size}
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
         >
@@ -117,8 +112,8 @@ const Pagination: React.FC<PaginationProps> = ({
             <React.Fragment key={index}>
               {typeof page === 'number' ? (
                 <Button
-                  variant={currentPage === page ? 'primary' : 'secondary'}
-                  size={buttonSizes[size]}
+                  variant={currentPage === page ? 'default' : 'secondary'}
+                  size={size}
                   onClick={() => onPageChange(page)}
                 >
                   {page}
@@ -134,7 +129,7 @@ const Pagination: React.FC<PaginationProps> = ({
 
         <Button
           variant="secondary"
-          size={buttonSizes[size]}
+          size={size}
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
@@ -151,7 +146,7 @@ interface SimplePaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
 export const SimplePagination: React.FC<SimplePaginationProps> = ({
@@ -159,7 +154,7 @@ export const SimplePagination: React.FC<SimplePaginationProps> = ({
   totalPages,
   onPageChange,
   className = '',
-  size = 'md',
+  size = 'default',
 }) => {
   return (
     <div className={`flex items-center justify-between ${className}`}>

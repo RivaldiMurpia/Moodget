@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import Modal from '@/components/ui/Modal';
-import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/modal';
+import Button from '@/components/ui/button';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
