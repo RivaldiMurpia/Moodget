@@ -12,6 +12,6 @@
       "DATABASE_URL": "@postgresql::DATABASE_URL",
       "NEXTAUTH_SECRET": "@NEXTAUTH_SECRET"
     },
-    "start": "npm run build && npm run start"
+    "start": "npm run build --prefix client && npm run start --prefix client"
   }
 }
